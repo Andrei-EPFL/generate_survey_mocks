@@ -6,9 +6,9 @@
 import argparse
 
 from generate_light_cone import LightCone, Paths
-from apply_survey_geometry import SurveyGeometry
+# from apply_survey_geometry import SurveyGeometry
 
-from stack_shells_into_fits import stack_shells
+# from stack_shells_into_fits import stack_shells
 
 
 def LC_ABACUS(args, galtype=None):
@@ -59,7 +59,7 @@ def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
 
 		path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
 
-		lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=1, n_subboxes=64, cat_seed=i)
+		lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=2, n_subboxes=64, cat_seed=i)
 
 		# survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
 		

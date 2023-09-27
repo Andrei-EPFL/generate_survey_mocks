@@ -190,15 +190,18 @@ class LightCone():
 						sz = sz_0
 
 					r   = ne.evaluate("sqrt(sx * sx + sy * sy + sz * sz)")
-					zi  = self.results.redshift_at_comoving_radial_distance(r / self.h) # interpolated distance from position
-
+					print("test", flush=True)
 					idx = np.where((r > chilow) & (r < chiupp))[0]              # only select halos that are within the shell
 
+
+
 					if idx.size!=0:
+						zp  = self.results.redshift_at_comoving_radial_distance(r[idx] / self.h) # interpolated distance from position
+						
 						ux = sx[idx] / r[idx]
 						uy = sy[idx] / r[idx]
 						uz = sz[idx] / r[idx]
-						zp = zi[idx]
+						# zp = zi[idx]
 
 						if self.mock_random_ic == "mock":
 							vx_0 = vx[idx]
