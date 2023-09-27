@@ -190,7 +190,6 @@ class LightCone():
 						sz = sz_0
 
 					r   = ne.evaluate("sqrt(sx * sx + sy * sy + sz * sz)")
-					print("test", flush=True)
 					idx = np.where((r > chilow) & (r < chiupp))[0]              # only select halos that are within the shell
 
 

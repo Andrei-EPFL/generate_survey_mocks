@@ -256,7 +256,7 @@ def main():
 	
 
 	### Abacus 2Gpc
-	# cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.800", snapshot=20)
+	cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.800", snapshot=20)
 	# cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.100", snapshot=16)
 	# cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.400", snapshot=12)
 
@@ -276,7 +276,7 @@ def main():
 	# random_ABACUS(args, galtype="ELG", snapshot=16, gal_in_name="ELGlowDens")
 	
 	### IC Abacus 2Gpc (To BE Tested)
-	cutsky_ic_ABACUS(args, galtype="LRG", redshift="", snapshot=576)
+	# cutsky_ic_ABACUS(args, galtype="LRG", redshift="", snapshot=576)
 
 	end = time.time()
 	print(f"################## FINISHED in {end-start}")
