@@ -81,7 +81,10 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
     counter_TOT, counter_NGC, counter_SGC = count(files)
     print(f"The number of tracers: TOT={counter_TOT}; NGC={counter_NGC}; SGC={counter_SGC}")
 
-    general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
+    general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4')]
+
+    if mock_random_ic != "ic":
+        general_columns += [('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
 
     if mock_random_ic == "mock":
         add_columns = [('Z', 'f4')]
@@ -133,7 +136,7 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
 
         f.close()
 
-    hdict = {'SV3_AREA': 207.5, 'Y5_TOT_AREA':14850.4, 'Y5_SGC_AREA':4666.5, 'Y5_NGC_AREA':10183.9}
+    hdict = {'Y5_TOT_AREA':14850.4, 'Y5_SGC_AREA':4666.5, 'Y5_NGC_AREA':10183.9}
 
     if ngc_sgc_tot == "TOT":
         print("Check last value of RA: ", data_fits_TOT["RA"][-1], ra_tmp[idx_Y5_TOT][-1])

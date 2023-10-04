@@ -6,9 +6,9 @@
 import argparse
 
 from generate_light_cone import LightCone, Paths
-# from apply_survey_geometry import SurveyGeometry
+from apply_survey_geometry import SurveyGeometry
 
-# from stack_shells_into_fits import stack_shells
+from stack_shells_into_fits import stack_shells
 
 
 def LC_ABACUS(args, galtype=None):
@@ -46,7 +46,6 @@ def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
 	######### Instances
 	lightcone_instance = LightCone(config_file, args)
 	# survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
-
 	# ######### CutSky
 	for i in range(0, 1):
 		phase = str(int(i)).zfill(3)
@@ -62,9 +61,10 @@ def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
 		lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=2, n_subboxes=64, cat_seed=i)
 
 		# survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
+		# survey_geometry_instance.shell_series(path_instance, todo=3)
 		
 		# out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
-		# stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
+		# stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="ic", ngc_sgc_tot="NGC_SGC", seed=i)
 
 def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=None):
 	in_fol_temp = "AbacusSummit_base_c000_ph"
@@ -256,7 +256,7 @@ def main():
 	
 
 	### Abacus 2Gpc
-	cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.800", snapshot=20)
+	# cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.800", snapshot=20)
 	# cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.100", snapshot=16)
 	# cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.400", snapshot=12)
 
@@ -276,7 +276,7 @@ def main():
 	# random_ABACUS(args, galtype="ELG", snapshot=16, gal_in_name="ELGlowDens")
 	
 	### IC Abacus 2Gpc (To BE Tested)
-	# cutsky_ic_ABACUS(args, galtype="LRG", redshift="", snapshot=576)
+	cutsky_ic_ABACUS(args, galtype="LRG", redshift="", snapshot=576)
 
 	end = time.time()
 	print(f"################## FINISHED in {end-start}")

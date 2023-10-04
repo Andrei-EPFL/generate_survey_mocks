@@ -16,17 +16,18 @@ import h5py
 
 def bits(ask="try"):
     "Used"
-    if ask == "LC":              return 0  #(0 0 0 0 0 0)
-    if ask == "downsample":      return 1  #(0 0 0 0 0 1)
-    if ask == "Y5foot":          return 2  #(0 0 0 0 1 0)
-    if ask == "downsample_LOP":  return 4  #(0 0 0 1 0 0)
-    if ask == "Y1foot":          return 8  #(0 0 1 0 0 0)
+    if ask == "LC":              return 0   #(0 0 0 0 0 0)
+    if ask == "downsample":      return 1   #(0 0 0 0 0 1)
+    if ask == "Y5foot":          return 2   #(0 0 0 0 1 0)
+    if ask == "downsample_LOP":  return 4   #(0 0 0 1 0 0)
+    if ask == "Y1foot":          return 8   #(0 0 1 0 0 0)
+    if ask == "Y1footbright":    return 16  #(0 1 0 0 0 0)
     print(f"You have asked for {ask}. Which does not exist. Please check bits() function in apply_survey_geometry.py.")
     os._exit(1)
 
 
-def mask(nz=0, Y5=0, nz_lop=0, Y1=0):
-    return nz * (2**0) + Y5 * (2**1) + nz_lop * (2**2) + Y1 * (2**3) 
+def mask(nz=0, Y5=0, nz_lop=0, Y1=0, Y1BRIGHT=0):
+    return nz * (2**0) + Y5 * (2**1) + nz_lop * (2**2) + Y1 * (2**3) + Y1BRIGHT * (2**4) 
 
 
 def apply_footprint(ra, dec, footprint_mask):
@@ -38,7 +39,7 @@ def apply_footprint(ra, dec, footprint_mask):
 
     if footprint_mask == 0:
         tiles_0 = Table.read('/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/ops/tiles-main.ecsv')
-        mask_y5 = (tiles['PROGRAM'] != 'BACKUP')
+        mask_y5 = (tiles_0['PROGRAM'] != 'BACKUP')
         tiles = tiles_0[mask_y5]
         bitval = bits(ask="Y5foot")
     elif footprint_mask == 1:
@@ -46,12 +47,12 @@ def apply_footprint(ra, dec, footprint_mask):
         bitval = bits(ask="Y1foot")
     elif footprint_mask == 2:
         tiles = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-BRIGHT.fits')
-        bitval = bits(ask="Y1foot")
-    elif footprint_mask == 3:
-        tiles_dark = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-DARK.fits')
-        tiles_bright = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-BRIGHT.fits')
-        tiles = vstack([tiles_dark, tiles_bright])
-        bitval = bits(ask="Y1foot")
+        bitval = bits(ask="Y1footbright")
+    # elif footprint_mask == 3:
+    #     tiles_dark = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-DARK.fits')
+    #     tiles_bright = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-BRIGHT.fits')
+    #     tiles = vstack([tiles_dark, tiles_bright])
+    #     bitval = bits(ask="Y1foot")
     else:
         print("ERROR: Wrong footprint.", flush=True)
         os._exit(1)
@@ -81,14 +82,19 @@ class SurveyGeometry():
 
         self.tracer_id = 0
 
-        if galtype in ("LRG", "LRG_main"):
-            self.tracer_id = 0
-        elif galtype == "ELG":
-            self.tracer_id = 1
-        elif galtype == "QSO":
-            self.tracer_id = 2
+        self.mock_random_ic = args.mock_random_ic
+        if self.mock_random_ic is None:
+            self.mock_random_ic = config.get('sim', 'mock_random_ic')
 
-        print(f"INFO: {self.galtype} with {self.tracer_id} ID")
+        if self.mock_random_ic != "ic":
+            if galtype in ("LRG", "LRG_main"):
+                self.tracer_id = 0
+            elif galtype == "ELG":
+                self.tracer_id = 1
+            elif galtype == "QSO":
+                self.tracer_id = 2
+
+            print(f"INFO: {self.galtype} with {self.tracer_id} ID")
 
 
     def get_nz(self, z_cat, ask=None):
@@ -175,9 +181,16 @@ class SurveyGeometry():
 
         foot_bit_0 = apply_footprint(ra, dec, 0)
         foot_bit_1 = apply_footprint(ra, dec, 1)
-        down_bit, ran_arr = self.downsample(z_cosmo, n_mean)
+        
+        if self.mock_random_ic != "ic":
+            down_bit, ran_arr = self.downsample(z_cosmo, n_mean)
+            out_arr = np.bitwise_or(np.bitwise_or(foot_bit_0, foot_bit_1), down_bit)
 
-        out_arr = np.bitwise_or(np.bitwise_or(foot_bit_0, foot_bit_1), down_bit)
+        else:
+            foot_bit_2 = apply_footprint(ra, dec, 2)
+            out_arr = np.bitwise_or(np.bitwise_or(foot_bit_0, foot_bit_1), foot_bit_2)
+        
+        
         out_arr = out_arr.astype(np.int32)
 
         if "STATUS" in data.keys():
@@ -185,12 +198,13 @@ class SurveyGeometry():
         else:
             f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
 
-        if "RAN_NUM_0_1" in data.keys():
-            print("WARNING: RAN_NUM_0_1 EXISTS. New RAN_NUM_0_1 has not been written.")
-        else:
-            f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr[0], dtype=np.float32)
-            if self.galtype == "ELG":
-                f.create_dataset('galaxy/RAN_NUM_0_1_LOP', data=ran_arr[1], dtype=np.float32)
+        if self.mock_random_ic != "ic":
+            if "RAN_NUM_0_1" in data.keys():
+                print("WARNING: RAN_NUM_0_1 EXISTS. New RAN_NUM_0_1 has not been written.")
+            else:
+                f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr[0], dtype=np.float32)
+                if self.galtype == "ELG":
+                    f.create_dataset('galaxy/RAN_NUM_0_1_LOP', data=ran_arr[1], dtype=np.float32)
 
         f.close()
 

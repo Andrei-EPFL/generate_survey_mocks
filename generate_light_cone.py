@@ -60,7 +60,7 @@ class Paths():
 
 
 class LightCone():
-	def __init__(self, config_file, args):
+	def __init__(self, config_file, args, parallel_BOOL=True):
 		config     = configparser.ConfigParser()
 		config.read(config_file)
 
@@ -85,6 +85,7 @@ class LightCone():
 		rotation_matrix_instance = RotationMatrix(config_file, args)
 		self.rotation_matrix = rotation_matrix_instance.rotation_matrix
 
+		self.parallel_BOOL = parallel_BOOL
 
 	def run_camb(self):
 		#Load all parameters from camb file
@@ -192,15 +193,13 @@ class LightCone():
 					r   = ne.evaluate("sqrt(sx * sx + sy * sy + sz * sz)")
 					idx = np.where((r > chilow) & (r < chiupp))[0]              # only select halos that are within the shell
 
-
-
+					
 					if idx.size!=0:
 						zp  = self.results.redshift_at_comoving_radial_distance(r[idx] / self.h) # interpolated distance from position
-						
+
 						ux = sx[idx] / r[idx]
 						uy = sy[idx] / r[idx]
 						uz = sz[idx] / r[idx]
-						# zp = zi[idx]
 
 						if self.mock_random_ic == "mock":
 							vx_0 = vx[idx]
@@ -301,23 +300,32 @@ class LightCone():
 			if os.path.isfile(out_file_name):
 				continue
 
-			jobs = []
-			manager = mp.Manager()
-			return_dict = manager.dict()
-			counter = 0
-			for subbox in range(n_subboxes):
-				infile = path_instance.input_file.format(redshift=redshift, subbox=subbox)
-				prefix = f"[shellnum={shellnum}; subbox={subbox}]: "
-
-				p = mp.Process(target=self.generate_shell, args=(infile, subbox, prefix, chilow, chiupp, return_dict))
-				jobs.append(p)
-				p.start()
-				counter = counter + 1
-				if (counter == nproc) or (subbox == n_subboxes - 1):
-					for proc in jobs:
-						proc.join()
-					counter = 0
-					jobs = []
+			### Pass through the subboxes
+			if self.parallel_BOOL:
+				jobs = []
+				manager = mp.Manager()
+				return_dict = manager.dict()
+				counter = 0
+				for subbox in range(n_subboxes):
+					infile = path_instance.input_file.format(redshift=redshift, subbox=subbox)
+					prefix = f"[shellnum={shellnum}; subbox={subbox}]: "	
+					p = mp.Process(target=self.generate_shell, args=(infile, subbox, prefix, chilow, chiupp, return_dict))
+					jobs.append(p)
+					p.start()
+					counter = counter + 1
+					if (counter == nproc) or (subbox == n_subboxes - 1):
+						for proc in jobs:
+							proc.join()
+						for proc in jobs:
+							proc.close()
+						counter = 0
+						jobs = []
+			else:
+				return_dict = {}
+				for subbox in range(n_subboxes):
+					infile = path_instance.input_file.format(redshift=redshift, subbox=subbox)
+					prefix = f"[shellnum={shellnum}; subbox={subbox}]: "
+					self.generate_shell(infile, subbox, prefix, chilow, chiupp, return_dict)
 
 			### Count the number of galaxies per shell
 			n_gal_shell_all_subboxes = 0
